@@ -85,7 +85,7 @@ def setupwithpybullet():
      robot, table, obstacle, cube = setuppinocchio()   
      sim = setuppybullet(robot)
      sim.setTorqueControlMode()
-     return robot, sim, cube
+     return robot, sim, table, cube
  
     
 def setupwithpybulletandmeshcat(url=MESHCAT_URL):

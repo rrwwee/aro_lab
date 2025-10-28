@@ -401,7 +401,14 @@ def construct_rrt(robot: pin.robot_wrapper.RobotWrapper,
 
 #returns a collision free path from qinit to qgoal under grasping constraints
 #the path is expressed as a list of configurations
-def computepath(qinit, qgoal, cubeplacementq0, cubeplacementqgoal):
+def computepath(qinit, 
+                qgoal, 
+                cubeplacementq0, 
+                cubeplacementqgoal,
+                robot=None, 
+                cube=None,
+                table=None,
+                computeqgrasppose=None):
     """ Returns a collision free path from qinit to qgoal under grasping constraints.
     Args:
         qinit: initial configuration
@@ -411,11 +418,10 @@ def computepath(qinit, qgoal, cubeplacementq0, cubeplacementqgoal):
     Returns:
         path: list of configurations
     """
-
-    global robot
-    global cube 
-    global table
-    global computeqgrasppose
+    robot = robot or globals().get("robot")
+    cube = cube or globals().get("cube")
+    table = table or globals().get("table")
+    computeqgrasppose = computeqgrasppose or globals().get("computeqgrasppose")
 
     NUM_ITER = 200
     RANDOM_SAMPLER = lambda: random_cube_placement(robot=robot, cube=cube, table=table)
