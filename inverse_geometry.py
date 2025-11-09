@@ -121,8 +121,8 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None):
         rotation_to_right_hook = norm(rhand_nu_world[:3])
         translation_to_right_hook = norm(rhand_nu_world[3:])
 
-        left_hook_close_enough = rotation_to_left_hook <= EPSILON and translation_to_left_hook <= EPSILON
-        right_hook_close_enough = rotation_to_right_hook <= EPSILON and translation_to_right_hook <= EPSILON
+        left_hook_close_enough = rotation_to_left_hook <= EPSILON and translation_to_left_hook <= EPSILON / 10
+        right_hook_close_enough = rotation_to_right_hook <= EPSILON and translation_to_right_hook <= EPSILON / 10
 
         if left_hook_close_enough and right_hook_close_enough:
             if not collision(robot, q):
