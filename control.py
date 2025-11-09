@@ -42,7 +42,9 @@ if __name__ == "__main__":
     from tools import setupwithpybullet, setupwithpybulletandmeshcat, rununtil
     from config import DT
     
-    robot, sim, table, cube = setupwithpybullet()
+    # `setupwithpybullet` currently returns (robot, sim, cube).
+    # Unpack and avoid depending on any `table` object.
+    robot, sim, cube = setupwithpybullet()
     
     
     from config import CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET    
@@ -54,11 +56,10 @@ if __name__ == "__main__":
     path, cube_placements = computepath(
         q0,
         qe,
-        CUBE_PLACEMENT, 
+        CUBE_PLACEMENT,
         CUBE_PLACEMENT_TARGET,
-        robot=robot, 
+        robot=robot,
         cube=cube,
-        table=table,
         computeqgrasppose=computeqgrasppose)
 
 

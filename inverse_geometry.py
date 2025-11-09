@@ -16,9 +16,20 @@ from config import CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET
 
 from tools import setcubeplacement
 
-def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None):
-    '''Return a collision free configuration grasping a cube at a specific location and a success flag'''
+def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None, max_attempts: int = 1000, viz_sleep: bool = True):
+    '''Return a collision free configuration grasping a cube at a specific location and a success flag.
+
+    Args:
+        robot: RobotWrapper
+        qcurrent: initial joint configuration to seed the IK
+        cube: cube body
+        cubetarget: desired cube SE3 placement
+        viz: optional visualizer
+        max_attempts: maximum number of IK iteration steps to attempt (default 1000)
+    '''
     q = qcurrent.copy()
+    # Ensure the cube is placed at the requested target before solving IK
+    setcubeplacement(robot, cube, cubetarget)
 
     lhand_id = robot.model.getFrameId(LEFT_HAND)
     rhand_id = robot.model.getFrameId(RIGHT_HAND)
@@ -28,7 +39,7 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None):
 
     success = False
 
-    for i in range(1000):
+    for i in range(max_attempts):
         pin.framesForwardKinematics(robot.model, robot.data, q)
         pin.computeJointJacobians(robot.model, robot.data, q)
 
@@ -65,8 +76,11 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None):
         rerror = norm(oMrhand.translation - oMrhook.translation)
 
         if viz:
+            # allow callers to request that we display without sleeping so the
+            # planner can validate IK quickly without incurring a sleep cost.
             viz.display(q)
-            time.sleep(1)
+            if viz_sleep:
+                time.sleep(0.1)
         
         if lerror < EPSILON and rerror < EPSILON and not collision(robot, q):
             success = True

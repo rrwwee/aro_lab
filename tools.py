@@ -77,7 +77,7 @@ def setupwithmeshcat(url=MESHCAT_URL):
      '''setups everything to work with the robot and meshcat'''
      robot, table, obstacle, cube = setuppinocchio()
      viz = setupmeshcat(robot, url)
-     return robot, cube, table, viz
+     return robot, cube, viz
  
 from setup_pybullet import setuppybullet
 def setupwithpybullet():
@@ -85,7 +85,7 @@ def setupwithpybullet():
      robot, table, obstacle, cube = setuppinocchio()   
      sim = setuppybullet(robot)
      sim.setTorqueControlMode()
-     return robot, sim, table, cube
+     return robot, sim, cube
  
     
 def setupwithpybulletandmeshcat(url=MESHCAT_URL):
