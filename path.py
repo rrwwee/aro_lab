@@ -115,12 +115,21 @@ def computepath(qinit,
 
     print('Searching for a valid path...(this may take some time)')
     # (no sampling-box visualization)
-    rrt = construct_rrt(
-        robot=robot,
-        cube=cube,
+    # Instantiate RRT with desired runtime parameters then run it. This uses
+    # the newer instance API so callers can inspect the tree if desired.
+    rrt = RRT(root_q=cubeplacementq0,
+              root_grasping_q=qinit,
+              robot=robot,
+              cube=cube,
+              get_grasping_poseq=GET_GRAPSING_POSEQ,
+              viz=viz,
+              viz_delay=viz_delay,
+              discretisation_steps=discretisation_steps,
+              max_ik_attempts=max_ik_attempts)
+
+    rrt = rrt.run(
         q_init=qinit,
         q_goal=qgoal,
-        cubeplacementq0=cubeplacementq0,
         cubeplacementqgoal=cubeplacementqgoal,
         num_iter=num_iter,
         random_sampler=RANDOM_SAMPLER,
@@ -130,9 +139,6 @@ def computepath(qinit,
         max_delta_q=MAX_DELTA_Q,
         discretisation_steps=discretisation_steps,
         get_grasping_poseq=GET_GRAPSING_POSEQ,
-        viz=viz,
-        viz_delay=viz_delay,
-        max_ik_attempts=max_ik_attempts,
         max_time_s=None,
         progress_log_every=50,
     )
