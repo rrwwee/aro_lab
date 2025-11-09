@@ -7,7 +7,19 @@ cleaner implementations from `sampling.py` and `rrt.py`.
 from sampling import random_cube_placement
 import sampling as sampling_module
 from rrt import Vertex, RRT, construct_rrt
-from constants import DEFAULT_NUM_ITER, DEFAULT_DISCRETISATION_STEPS, DEFAULT_VIZ_DELAY, DEFAULT_SAMPLER_SHRINK, DEFAULT_PLANE_HALF_WIDTH, DEFAULT_TABLE_Z_RANGE
+from constants import (
+    DEFAULT_NUM_ITER,
+    DEFAULT_DISCRETISATION_STEPS,
+    DEFAULT_VIZ_DELAY,
+    DEFAULT_SAMPLER_SHRINK,
+    DEFAULT_PLANE_HALF_WIDTH,
+    DEFAULT_TABLE_Z_RANGE,
+    PRESETS,
+    DEFAULT_REPAIR_ATTEMPTS,
+    DEFAULT_GOAL_BIAS,
+    DEFAULT_MAX_IK_ATTEMPTS,
+    DEFAULT_MAX_TIME_S,
+)
 from tools import setcubeplacement
 import time
 import logging
@@ -36,6 +48,7 @@ def computepath(qinit,
                 num_iter: int = DEFAULT_NUM_ITER,
                 discretisation_steps: int = DEFAULT_DISCRETISATION_STEPS,
                 max_ik_attempts: int = None,
+                max_time_s: float = DEFAULT_MAX_TIME_S,
                 post_path_wait: float = 5.0,
                 random_sampler=None,
                 repair_sampler=None,
@@ -131,7 +144,7 @@ def computepath(qinit,
               max_delta_q=MAX_DELTA_Q,
               cubeplacementqgoal=cubeplacementqgoal,
               q_goal=qgoal,
-              max_time_s=None,
+              max_time_s=max_time_s,
               progress_log_every=50,
               repair_sampler=repair_sampler,
               repair_max_attempts=repair_max_attempts,
@@ -204,6 +217,7 @@ if __name__ == "__main__":
     parser.add_argument('--smart-global', action='store_true', help='Use the smart sampler as the global sampler instead of repair-only')
     parser.add_argument('--goal-bias', type=float, default=0.02, help='Probability to sample the goal directly on each iteration (0.0-1.0)')
     parser.add_argument('--playback', action='store_true', help='Show the final path even if planning ran with --no-viz')
+    parser.add_argument('--preset', choices=['fast', 'default', 'robust'], default=None, help='Use a preset bundle of planner defaults')
     args = parser.parse_args()
 
     logging.basicConfig(level=logging.INFO)
@@ -221,6 +235,24 @@ if __name__ == "__main__":
         raise SystemExit(1)
 
     viz_obj = None if args.no_viz else viz
+    # Resolve preset values (CLI args override preset). We detect explicit
+    # CLI overrides by checking sys.argv for the flag name.
+    import sys
+    preset_values = PRESETS.get(args.preset) if args.preset is not None else {}
+    def use_or_preset(flag_name, current_value):
+        # Return CLI-provided value if flag present, otherwise preset or current_value
+        if f'--{flag_name}' in sys.argv:
+            return current_value
+        if preset_values and flag_name in preset_values:
+            return preset_values[flag_name]
+        return current_value
+
+    resolved_num_iter = use_or_preset('num-iter', args.num_iter)
+    resolved_discretisation = use_or_preset('discretisation', args.discretisation)
+    resolved_repair_attempts = use_or_preset('repair-attempts', args.repair_attempts)
+    resolved_goal_bias = use_or_preset('goal-bias', args.goal_bias)
+    resolved_max_ik_attempts = use_or_preset('max-ik-attempts', args.max_ik_attempts if args.max_ik_attempts is not None else DEFAULT_MAX_IK_ATTEMPTS)
+    resolved_max_time = use_or_preset('max-time', args.max_time if args.max_time is not None else DEFAULT_MAX_TIME_S)
     # choose sampler: either let computepath build the plane sampler, or build a smart sampler here
     RANDOM_SAMPLER = None
     REPAIR_SAMPLER = None
@@ -303,13 +335,18 @@ if __name__ == "__main__":
         robot=robot,
         cube=cube,
         computeqgrasppose=computeqgrasppose,
-        num_iter=args.num_iter,
-        discretisation_steps=args.discretisation,
+        num_iter=resolved_num_iter,
+        discretisation_steps=resolved_discretisation,
         random_sampler=RANDOM_SAMPLER,
         repair_sampler=REPAIR_SAMPLER,
+        repair_max_attempts=resolved_repair_attempts,
+        goal_bias=resolved_goal_bias,
         viz=viz_obj,
         viz_delay=args.viz_delay,
-        max_ik_attempts=args.max_ik_attempts,
+        max_ik_attempts=resolved_max_ik_attempts,
+        # forward wall-time
+        # Note: computepath forwards this into construct_rrt/RRT.run
+        max_time_s=resolved_max_time,
     )
 
     # optionally playback the final path. If --playback is set we show the
