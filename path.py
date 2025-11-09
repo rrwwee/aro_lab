@@ -125,23 +125,19 @@ def computepath(qinit,
               viz=viz,
               viz_delay=viz_delay,
               discretisation_steps=discretisation_steps,
-              max_ik_attempts=max_ik_attempts)
+              max_ik_attempts=max_ik_attempts,
+              num_iter=num_iter,
+              random_sampler=RANDOM_SAMPLER,
+              max_delta_q=MAX_DELTA_Q,
+              cubeplacementqgoal=cubeplacementqgoal,
+              q_goal=qgoal,
+              max_time_s=None,
+              progress_log_every=50,
+              repair_sampler=repair_sampler,
+              repair_max_attempts=repair_max_attempts,
+              goal_bias=goal_bias)
 
-    rrt = rrt.run(
-        q_init=qinit,
-        q_goal=qgoal,
-        cubeplacementqgoal=cubeplacementqgoal,
-        num_iter=num_iter,
-        random_sampler=RANDOM_SAMPLER,
-        repair_sampler=repair_sampler,
-        repair_max_attempts=repair_max_attempts,
-        goal_bias=goal_bias,
-        max_delta_q=MAX_DELTA_Q,
-        discretisation_steps=discretisation_steps,
-        get_grasping_poseq=GET_GRAPSING_POSEQ,
-        max_time_s=None,
-        progress_log_every=50,
-    )
+    rrt = rrt.run()
 
     if not rrt:
         print(
