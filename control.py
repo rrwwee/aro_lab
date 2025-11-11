@@ -124,12 +124,11 @@ if __name__ == "__main__":
         
     from tools import setupwithpybullet, setupwithpybulletandmeshcat, rununtil
     from config import DT
-
     from config import CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET    
     from inverse_geometry import computeqgrasppose
     from path import computepath
     
-    robot, sim, table, cube = setupwithpybullet()
+    robot, sim, cube = setupwithpybullet()
     
     q0, successinit = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT, None)
     qe, successend = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT_TARGET,  None)
@@ -141,11 +140,10 @@ if __name__ == "__main__":
     path, cube_placements = computepath(
         q0,
         qe,
-        CUBE_PLACEMENT, 
+        CUBE_PLACEMENT,
         CUBE_PLACEMENT_TARGET,
-        robot=robot, 
+        robot=robot,
         cube=cube,
-        table=table,
         computeqgrasppose=computeqgrasppose)
 
     sim.setqsim(q0)
