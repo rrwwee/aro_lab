@@ -119,7 +119,7 @@ if __name__ == "__main__":
     from inverse_geometry import computeqgrasppose
     from path import computepath
     
-    robot, sim, table, cube = setupwithpybullet()
+    robot, sim, cube = setupwithpybullet()
     
     q0, successinit = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT, None)
     qe, successend = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT_TARGET,  None)
