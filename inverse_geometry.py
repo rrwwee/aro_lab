@@ -9,7 +9,7 @@ Created on Wed Sep  6 15:32:51 2023
 import pinocchio as pin 
 import numpy as np
 from numpy.linalg import pinv,inv,norm,svd,eig
-from tools import collision, getcubeplacement, setcubeplacement, projecttojointlimits
+from tools import collision, getcubeplacement, setcubeplacement, jointlimitsviolated
 from config import LEFT_HOOK, RIGHT_HOOK, LEFT_HAND, RIGHT_HAND, EPSILON
 from config import CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET
 
@@ -125,7 +125,7 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None):
         right_hook_close_enough = rotation_to_right_hook <= EPSILON and translation_to_right_hook <= EPSILON / 10
 
         if left_hook_close_enough and right_hook_close_enough:
-            if not collision(robot, q):
+            if not collision(robot, q) and not jointlimitsviolated(robot, q):
                 q_opt_found = True
                 break
 

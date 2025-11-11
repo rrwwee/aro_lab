@@ -15,7 +15,7 @@ import time
 
 from typing import Callable, Tuple, List
 from pinocchio.utils import rotate
-from tools import setcubeplacement
+from tools import setcubeplacement, distanceToObstacle
 
 
 #### Helper Functions for Random Cube Placement Sampling ####
@@ -215,7 +215,7 @@ class RRT:
                     cube=self.cube,
                     cubetarget=q,
                 )
-                if not found_grasping_pose:
+                if not found_grasping_pose or (found_grasping_pose and distanceToObstacle(self.robot, grasping_q) < 2e-3):
                     if i - 1 == 0:
                         q_new_found = False
                     return self.lerp(
@@ -423,10 +423,10 @@ def computepath(qinit,
     table = table or globals().get("table")
     computeqgrasppose = computeqgrasppose or globals().get("computeqgrasppose")
 
-    NUM_ITER = 200
+    NUM_ITER = 500
     RANDOM_SAMPLER = lambda: random_cube_placement(robot=robot, cube=cube, table=table)
     MAX_DELTA_Q = None
-    DISCRETISATION_STEPS = 100
+    DISCRETISATION_STEPS = 200
     GET_GRAPSING_POSEQ = computeqgrasppose
 
     print('Searching for a valid path...(this may take some time)')
