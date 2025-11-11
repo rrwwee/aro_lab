@@ -93,7 +93,7 @@ def computepath(qinit,
 
         def plane_sampler():
             while True:
-                s = np.random.uniform(0.0, 1.0)
+                s = np.random.uniform(-1.0, 2.0)
                 t = np.random.uniform(-half_width, half_width)
                 xy = (1.0 - s) * p0_xy + s * p1_xy + perp * t
                 z = np.random.uniform(zmin, zmax)

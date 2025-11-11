@@ -13,7 +13,7 @@ import pinocchio as pin
 from pinocchio.utils import rotate
 
 from constants import EDGE_DISTANCE_TOL, DEFAULT_DISCRETISATION_STEPS, DEFAULT_CHECK_EDGE_STEPS
-from tools import setcubeplacement
+from tools import setcubeplacement, distanceToObstacle
 from constants import DEFAULT_VIZ_DELAY
 import time
 import sampling
@@ -192,7 +192,7 @@ class RRT:
                 # update seed for the next interpolation step if IK succeeded
                 if found and grasping_q is not None:
                     seed_grasping_q = grasping_q
-                if not found:
+                if not found or distanceToObstacle(self.robot, grasping_q) < 0.001:
                     # cannot progress past the previous valid step
                     if i - 1 == 0:
                         q_new_found = False
