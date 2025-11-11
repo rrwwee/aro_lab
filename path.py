@@ -30,13 +30,10 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
-<<<<<<< HEAD
-=======
 from typing import Callable, Tuple, List
 from pinocchio.utils import rotate
 from tools import setcubeplacement, distanceToObstacle
 
->>>>>>> monica-branch
 __all__ = [
     "random_cube_placement",
     "Vertex",
@@ -75,10 +72,7 @@ def computepath(qinit,
     cube = cube or globals().get("cube")
     computeqgrasppose = computeqgrasppose or globals().get("computeqgrasppose")
 
-<<<<<<< HEAD
 
-=======
->>>>>>> monica-branch
     # If no sampler supplied, build a constrained sampler on the vertical plane
     # that intersects the initial and final cube placements.
     sampling_box_ranges = None
@@ -134,11 +128,7 @@ def computepath(qinit,
     else:
         RANDOM_SAMPLER = random_sampler
     MAX_DELTA_Q = None
-<<<<<<< HEAD
     GET_GRASPPING_POSEQ = computeqgrasppose
-=======
-    GET_GRAPSING_POSEQ = computeqgrasppose
->>>>>>> monica-branch
 
     print('Searching for a valid path...(this may take some time)')
     # (no sampling-box visualization)
