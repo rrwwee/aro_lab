@@ -215,7 +215,7 @@ class RRT:
                     cube=self.cube,
                     cubetarget=q,
                 )
-                if not found_grasping_pose or (found_grasping_pose and distanceToObstacle(self.robot, grasping_q) < 2e-3):
+                if not found_grasping_pose or (found_grasping_pose and distanceToObstacle(self.robot, grasping_q) < 1e-3):
                     if i - 1 == 0:
                         q_new_found = False
                     return self.lerp(
@@ -426,7 +426,7 @@ def computepath(qinit,
     NUM_ITER = 500
     RANDOM_SAMPLER = lambda: random_cube_placement(robot=robot, cube=cube, table=table)
     MAX_DELTA_Q = None
-    DISCRETISATION_STEPS = 200
+    DISCRETISATION_STEPS = 150
     GET_GRAPSING_POSEQ = computeqgrasppose
 
     print('Searching for a valid path...(this may take some time)')
@@ -447,7 +447,7 @@ def computepath(qinit,
     if not rrt:
         print(
             """Valid Path was not found! 
-            Try to increase discretisation steps or try with different start and end configurations.""")
+            Try to decrease discretisation steps or try with different start and end configurations.""")
         
         return [], []
 

@@ -141,7 +141,7 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None):
 if __name__ == "__main__":
     from tools import setupwithmeshcat
     from setup_meshcat import updatevisuals
-    robot, cube, viz = setupwithmeshcat()
+    robot, cube, table, viz = setupwithmeshcat()
     
     q = robot.q0.copy()
     
