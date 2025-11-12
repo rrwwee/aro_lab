@@ -428,8 +428,7 @@ class LinearPathWithTrapezoidalVel:
         sdd_base = self.Ltot * (60*tau - 180*tau2 + 120*tau3) / (self.T**2)
         
         # Slow down factor based on proximity to corners
-        # slowdown = self._corner_slowdown_factor(s_base)
-        slowdown = 1.0
+        slowdown = self._corner_slowdown_factor(s_base)
         
         return s_base, sd_base * slowdown, sdd_base * slowdown
     
