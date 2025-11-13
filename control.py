@@ -18,7 +18,7 @@ from tools import setcubeplacement
 from config import LEFT_HAND, RIGHT_HAND
 from qp_utils import get_bezier_control_points
 import pybullet as pyb
-    
+
 # in my solution these gains were good enough for all joints but you might want to tune this.
 Kp = 1000               # proportional gain (P of PD)
 Kv = 30 * np.sqrt(Kp)   # derivative gain (D of PD)
@@ -27,7 +27,7 @@ Kx_lin = 2000  # Very stiff position control
 Dx_lin = 5 * np.sqrt(Kx_lin)
 
 Kx_rot = 1000
-Dx_rot = 10          
+Dx_rot = 10
 
 # Whether to use Bezier curve for trajectory generation
 USE_BEZIER = False
@@ -44,7 +44,7 @@ def controllaw(sim, robot, trajs, tcurrent):
     q_target = trajs[0](tcurrent)
     vq_target = trajs[1](tcurrent)
     vvq_target = trajs[2](tcurrent)
-    
+
     vvq_des = vvq_target + Kp * (q_target - q) + Kv * (vq_target - vq)
     M = robot.mass(q)
     h = robot.nle(q, vq)
@@ -68,22 +68,22 @@ def controllaw(sim, robot, trajs, tcurrent):
     oMLhand_desired = data.oMf[left_id]   # From joint trajectory
     oMRhand_desired = data.oMf[right_id]
 
-    
+
     pin.forwardKinematics(model, data, q, vq)
     pin.updateFramePlacements(model, data)
     pin.computeJointJacobians(model, data, q)
-    
+
     # Jacobians
-    J_l = pin.computeFrameJacobian(model, data, q, left_id, 
+    J_l = pin.computeFrameJacobian(model, data, q, left_id,
                                     pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
     J_r = pin.computeFrameJacobian(model, data, q, right_id,
                                     pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
-                                    
+
     oMLhand_actual = data.oMf[left_id]
     oMRhand_actual = data.oMf[right_id]
 
     error_pos_hands = oMLhand_actual.translation - oMRhand_actual.translation
-    
+
     # Orientation errors
     R_err_l = oMLhand_desired.rotation @ oMLhand_actual.rotation.T
     err_rot_l = pin.log3(R_err_l)
@@ -92,13 +92,13 @@ def controllaw(sim, robot, trajs, tcurrent):
     err_rot_r = pin.log3(R_err_r)
 
     # Velocities
-    v_l = pin.getFrameVelocity(model, data, left_id, 
+    v_l = pin.getFrameVelocity(model, data, left_id,
                                pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
     vel_l = np.hstack([v_l.linear, v_l.angular])
     v_r = pin.getFrameVelocity(model, data, right_id,
                                pin.ReferenceFrame.LOCAL_WORLD_ALIGNED)
     vel_r = np.hstack([v_r.linear, v_r.angular])
-    
+
     # Compute correction forces
     F_l = np.hstack([
         -Kx_lin * error_pos_hands - Dx_lin * vel_l[:3],
@@ -108,7 +108,7 @@ def controllaw(sim, robot, trajs, tcurrent):
         Kx_lin * error_pos_hands - Dx_lin * vel_r[:3],
         Kx_rot * err_rot_r - Dx_rot * vel_r[3:]
     ])
-    
+
     # Map to joint torques
     tau_l = J_l[:, :].T @ F_l
     tau_r = J_r[:, :].T @ F_r
@@ -119,17 +119,17 @@ def controllaw(sim, robot, trajs, tcurrent):
     # Combine: base tracking + end-effector correction
     tau_total = tau_base + tau_r + tau_l
     sim.step(tau_total)
- 
+
 if __name__ == "__main__":
-        
+
     from tools import setupwithpybullet, setupwithpybulletandmeshcat, rununtil
     from config import DT
-    from config import CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET    
+    from config import CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET
     from inverse_geometry import computeqgrasppose
     from path import computepath
-    
+
     robot, sim, cube = setupwithpybullet()
-    
+
     q0, successinit = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT, None)
     qe, successend = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT_TARGET,  None)
 
@@ -168,7 +168,7 @@ if __name__ == "__main__":
             joint_space_trajectory.derivative(1),
             joint_space_trajectory.derivative(2)
         )
-    
+
     total_time=10.0
 
     if USE_BEZIER:
@@ -183,15 +183,13 @@ if __name__ == "__main__":
         )
 
     tcur = 0.
-    
+
     while tcur < total_time:
         rununtil(
-            controllaw, 
-            DT, 
-            sim, 
-            robot, 
-            trajs, 
+            controllaw,
+            DT,
+            sim,
+            robot,
+            trajs,
             tcur)
         tcur += DT
-
-    

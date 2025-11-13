@@ -6,7 +6,7 @@ Created on Wed Sep  6 15:32:51 2023
 @author: stonneau
 """
 
-import pinocchio as pin 
+import pinocchio as pin
 import numpy as np
 from numpy.linalg import pinv,inv,norm,svd,eig
 from tools import collision, getcubeplacement, setcubeplacement, jointlimitsviolated
@@ -34,7 +34,7 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None, max_attempts:
 
     lhand_id = robot.model.getFrameId(LEFT_HAND)
     rhand_id = robot.model.getFrameId(RIGHT_HAND)
-    
+
     oMlhook = getcubeplacement(cube, LEFT_HOOK)
     oMrhook = getcubeplacement(cube, RIGHT_HOOK)
 
@@ -49,7 +49,7 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None, max_attempts:
 
         lhandMlhook = oMlhand.inverse()*oMlhook
         rhandMrhook = oMrhand.inverse()*oMrhook
-        
+
         nu_L = pin.log(lhandMlhook).vector
         nu_R = pin.log(rhandMrhook).vector
 
@@ -82,25 +82,22 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None, max_attempts:
             viz.display(q)
             if viz_sleep:
                 time.sleep(0.1)
-        
+
         if lerror < EPSILON and rerror < EPSILON and not collision(robot, q) and not jointlimitsviolated(robot, q):
             success = True
             break
-    
+
     return q, success
 
-            
+
 if __name__ == "__main__":
     from tools import setupwithmeshcat
     from setup_meshcat import updatevisuals
     robot, cube, viz = setupwithmeshcat()
-    
+
     q = robot.q0.copy()
-    
+
     q0,successinit = computeqgrasppose(robot, q, cube, CUBE_PLACEMENT, viz)
     qe,successend = computeqgrasppose(robot, q, cube, CUBE_PLACEMENT_TARGET,  viz)
-    
+
     updatevisuals(viz, robot, cube, q0)
-    
-    
-    
