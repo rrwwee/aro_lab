@@ -157,7 +157,7 @@ if __name__ == "__main__":
 
     def maketraj_with_joint_space_linear(
             waypoints: List[np.array],
-            T: int):
+            T: float):
         joint_space_trajectory = GlobalMinJerkLinearJTraj(
             waypoints=waypoints,
             T_max=T,

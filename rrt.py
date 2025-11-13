@@ -8,6 +8,7 @@ is intentionally minimal and readable.
 from typing import Callable, Tuple, List, Optional
 
 import logging
+from inverse_geometry import computeqgrasppose
 import numpy as np
 import pinocchio as pin
 from pinocchio.utils import rotate
@@ -156,7 +157,7 @@ class RRT:
                 # backwards-compatible way and time the call. We set
                 # viz_sleep=False so display calls (if any) don't sleep.
                 from ik_utils import call_ik
-                ik_kwargs = dict(
+                grasping_q, found = computeqgrasppose(
                     robot=self.robot,
                     qcurrent=seed_grasping_q,
                     cube=self.cube,
@@ -165,7 +166,6 @@ class RRT:
                     max_attempts=(self.max_ik_attempts if self.max_ik_attempts is not None else 1000),
                     viz_sleep=False,
                 )
-                (grasping_q, found), dt_ik = call_ik(self.get_grasping_poseq, **ik_kwargs)
                 # update seed for the next interpolation step if IK succeeded
                 if found and grasping_q is not None:
                     seed_grasping_q = grasping_q

@@ -28,7 +28,7 @@ RIGHT_HAND = 'RARM_EFF'
 LEFT_HOOK = "LARM_HOOK"
 RIGHT_HOOK = "RARM_HOOK"
 
-    
+
 #scene placements
 ROBOT_PLACEMENT= pin.XYZQUATToSE3(np.array([0.,0.,0.85,0.,0.,0.,1.]))
 TABLE_PLACEMENT= pin.SE3(rotate('z',-np.pi/2),np.array([0.8,0.,0.]))
@@ -37,13 +37,13 @@ CUBE_PLACEMENT = pin.SE3(rotate('z', 0.),np.array([0.33, -0.3, 0.93]))
 CUBE_PLACEMENT_TARGET= pin.SE3(rotate('z', 0),np.array([0.4, 0.11, 0.93]))
 
 #do not edit this part unless you know what you are doing
-MODELS_PATH = join(dirname(str(abspath(__file__))), "models") 
-MESH_DIR = MODELS_PATH 
+MODELS_PATH = join(dirname(str(abspath(__file__))), "models")
+MESH_DIR = MODELS_PATH
 NEXTAGE_URDF_PATH = MODELS_PATH + '/nextagea_description/urdf/'
 NEXTAGE_URDF = NEXTAGE_URDF_PATH + 'NextageaOpen.urdf'
 NEXTAGE_SRDF = NEXTAGE_URDF_PATH + 'NextageAOpen.srdf'
 TABLE_URDF = MODELS_PATH + '/table/table_tallerscaled.urdf'
-TABLE_MESH = MODELS_PATH +  "/table/" 
+TABLE_MESH = MODELS_PATH +  "/table/"
 OBSTACLE_URDF = MODELS_PATH + '/cubes/obstacle.urdf'
 OBSTACLE_MESH = MODELS_PATH + '/cubes/'
 CUBE_URDF = MODELS_PATH + '/cubes/cube_small.urdf'
