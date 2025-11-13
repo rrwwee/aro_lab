@@ -26,7 +26,7 @@ DEFAULT_PLANE_HALF_WIDTH: float = 0.02
 DEFAULT_REPAIR_ATTEMPTS: int = 5
 DEFAULT_GOAL_BIAS: float = 0.03
 DEFAULT_MAX_IK_ATTEMPTS: int = 3
-DEFAULT_MAX_TIME_S: float = 30.0
+DEFAULT_MAX_TIME_S: float = 300
 
 # Preset bundles for convenience: 'fast', 'default', 'robust'
 PRESETS = {

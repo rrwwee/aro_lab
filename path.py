@@ -4,9 +4,7 @@ This file used to contain the RRT and sampling implementation. To keep
 backwards compatibility for imports that expect `path.py`, it re-exports the
 cleaner implementations from `sampling.py` and `rrt.py`.
 """
-from sampling import random_cube_placement
-import sampling as sampling_module
-from rrt import Vertex, RRT, construct_rrt
+from rrt import Vertex, RRT
 from constants import (
     DEFAULT_NUM_ITER,
     DEFAULT_DISCRETISATION_STEPS,
@@ -34,13 +32,6 @@ from typing import Callable, Tuple, List
 from pinocchio.utils import rotate
 from tools import setcubeplacement, distanceToObstacle
 
-__all__ = [
-    "random_cube_placement",
-    "Vertex",
-    "RRT",
-    "construct_rrt",
-]
-
 def computepath(qinit,
                 qgoal,
                 cubeplacementq0,
@@ -54,8 +45,6 @@ def computepath(qinit,
                 max_time_s: float = DEFAULT_MAX_TIME_S,
                 post_path_wait: float = 5.0,
                 random_sampler=None,
-                repair_sampler=None,
-                repair_max_attempts: int = 5,
                 goal_bias: float = 0.02,
                 viz=None,
                 viz_delay: float = DEFAULT_VIZ_DELAY):
@@ -73,9 +62,6 @@ def computepath(qinit,
     computeqgrasppose = computeqgrasppose or globals().get("computeqgrasppose")
 
 
-    # If no sampler supplied, build a constrained sampler on the vertical plane
-    # that intersects the initial and final cube placements.
-    sampling_box_ranges = None
     if random_sampler is None:
         p0 = np.array(cubeplacementq0.translation)
         p1 = np.array(cubeplacementqgoal.translation)
@@ -148,11 +134,9 @@ def computepath(qinit,
               max_delta_q=MAX_DELTA_Q,
               cubeplacementqgoal=cubeplacementqgoal,
               q_goal=qgoal,
-              max_time_s=max_time_s,
-              progress_log_every=50,
-              goal_bias=goal_bias)
+              max_time_s=max_time_s)
 
-    rrt = rrt.run()
+    rrt.run()
 
     if not rrt:
         print(
@@ -204,18 +188,11 @@ if __name__ == "__main__":
     parser.add_argument('--no-viz', action='store_true', help='Disable visualization during planning')
     parser.add_argument('--discretisation', type=int, default=DEFAULT_DISCRETISATION_STEPS, help='Discretisation steps for interpolation')
     parser.add_argument('--num-iter', type=int, default=DEFAULT_NUM_ITER, help='Maximum RRT iterations/samples')
-    # smart sampler params
-    parser.add_argument('--smart-init-sigma', type=float, default=0.02, help='Initial sigma (m) for smart midpoint sampler')
-    parser.add_argument('--smart-scale', type=float, default=1.5, help='Sigma inflation factor for smart sampler')
-    parser.add_argument('--smart-max-sigma', type=float, default=0.2, help='Maximum sigma (m) for smart sampler')
-    parser.add_argument('--smart-max-attempts', type=int, default=30, help='Max attempts for smart sampler before fallback')
     parser.add_argument('--max-time', type=float, default=None, help='Maximum wall time (s) for planner (abort early)')
     parser.add_argument('--max-ik-attempts', type=int, default=None, help='Maximum IK iterations per interpolation point')
     parser.add_argument('--max-delta-q', type=float, default=None, help='Maximum delta (translation) per extension (meters)')
     parser.add_argument('--viz-delay', type=float, default=DEFAULT_VIZ_DELAY, help='Visualization delay in seconds')
     parser.add_argument('--progress-every', type=int, default=50, help='How many iterations between progress logs')
-    parser.add_argument('--repair-attempts', type=int, default=5, help='How many local repair attempts to try when an extension fails')
-    parser.add_argument('--smart-global', action='store_true', help='Use the smart sampler as the global sampler instead of repair-only')
     parser.add_argument('--goal-bias', type=float, default=0.02, help='Probability to sample the goal directly on each iteration (0.0-1.0)')
     parser.add_argument('--playback', action='store_true', help='Show the final path even if planning ran with --no-viz')
     parser.add_argument('--preset', choices=['fast', 'default', 'robust'], default=None, help='Use a preset bundle of planner defaults')
@@ -254,8 +231,6 @@ if __name__ == "__main__":
     resolved_max_ik_attempts = use_or_preset('max-ik-attempts', args.max_ik_attempts if args.max_ik_attempts is not None else DEFAULT_MAX_IK_ATTEMPTS)
     resolved_max_time = use_or_preset('max-time', args.max_time if args.max_time is not None else DEFAULT_MAX_TIME_S)
     # choose sampler: either let computepath build the plane sampler, or build a smart sampler here
-    RANDOM_SAMPLER = None
-    REPAIR_SAMPLER = None
 
     path, cube_placements = computepath(
         q0, qe, CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET,
@@ -264,7 +239,6 @@ if __name__ == "__main__":
         computeqgrasppose=computeqgrasppose,
         num_iter=resolved_num_iter,
         discretisation_steps=resolved_discretisation,
-        random_sampler=RANDOM_SAMPLER,
         goal_bias=resolved_goal_bias,
         viz=viz_obj,
         viz_delay=args.viz_delay,

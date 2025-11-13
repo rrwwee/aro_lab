@@ -320,7 +320,8 @@ class GlobalMinJerkLinearJTraj:
     """
     def __init__(self, waypoints, T_max, eps=1e-9):
         W = np.asarray(waypoints, float)
-        assert W.ndim == 2 and W.shape[0] >= 2
+        # assert W.ndim == 2 and W.shape[0] >= 2
+        print(W)
         self.W = W
         self.nq = W.shape[1]
         self.T = float(T_max)
