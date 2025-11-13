@@ -7,9 +7,9 @@ from bezier import Bezier
 
 class RobotTrajectoryWrapper:
     def __init__(
-        self, 
-        q_init, 
-        q_goal, 
+        self,
+        q_init,
+        q_goal,
         T_max,
         T_min=0.0,
         dt: float = DT
@@ -72,8 +72,8 @@ class RobotTrajectoryWrapper:
 
 
 class CubeBezierTrajectory:
-    def __init__(self, 
-                cube_placements, 
+    def __init__(self,
+                cube_placements,
                 robot,
                 cube,
                 q_init,
@@ -108,7 +108,7 @@ class CubeBezierTrajectory:
     def __call__(self, t):
         cube_pos = self.q_of_t_cube(t)
         cube_placement = pin.SE3(rotate('z', 0.), cube_pos)
-        
+
         q, success = computeqgrasppose(
             robot=self.robot,
             qcurrent=self.robot_q_trajectory.get_closest_q(t - self.dt),
@@ -140,8 +140,8 @@ class CubeBezierTrajectory:
 
 
 class CubeLinearTrajectory:
-    def __init__(self, 
-                cube_placements, 
+    def __init__(self,
+                cube_placements,
                 robot,
                 cube,
                 q_init,
@@ -174,7 +174,7 @@ class CubeLinearTrajectory:
         self.cumulative_lengths = np.concatenate([[0], np.cumsum(self.lengths)])
         self.total_length = self.cumulative_lengths[-1]
 
-        # constant speed 
+        # constant speed
         self.v = self.total_length / T_max
 
     def _register_robot_q_t(self, q, t):
@@ -237,7 +237,7 @@ class LinearJointTrajectory:
     """
     def __init__(self, waypoints, T_max, qdot_max=None, amax=None, eps=1e-9):
         self.W = np.asarray(waypoints, dtype=float)  # (K, nq)
-        assert self.W.ndim == 2 and self.W.shape[0] >= 2, "Need at least 2 waypoints"
+        # assert self.W.ndim == 2 and self.W.shape[0] >= 2, "Need at least 2 waypoints"
         self.nq = self.W.shape[1]
         self.T_max = float(T_max)
         self.eps = eps
@@ -401,88 +401,88 @@ class LinearPathWithTrapezoidalVel:
         self.W = W
         self.nq = W.shape[1]
         self.T = T_max
-        
+
         # Segment lengths
         dQ = np.diff(W, axis=0)
         seg_L = np.linalg.norm(dQ, axis=1)
         self.seg_L = seg_L
         self.cum_L = np.concatenate(([0.0], np.cumsum(seg_L)))
         self.Ltot = self.cum_L[-1]
-        
+
         # Direction vectors
         self.seg_dir = dQ / (seg_L[:, None] + 1e-9)
-        
+
         # Define "corner zones" - last X% of each segment + first X% of next
         self.corner_slowdown = corner_slowdown
         self.slow_distance = corner_slowdown * np.min(seg_L[seg_L > 0]) if len(seg_L) > 0 else 0.1
-    
+
     def _s(self, t):
         """Min-jerk profile on [0, T] but modified near corners"""
         tau = np.clip(t / self.T, 0.0, 1.0)
         tau2, tau3 = tau*tau, tau*tau*tau
         tau4, tau5 = tau2*tau2, tau3*tau2
-        
+
         # Base min-jerk
         s_base = self.Ltot * (10*tau3 - 15*tau4 + 6*tau5)
         sd_base = self.Ltot * (30*tau2 - 60*tau3 + 30*tau4) / self.T
         sdd_base = self.Ltot * (60*tau - 180*tau2 + 120*tau3) / (self.T**2)
-        
+
         # Slow down factor based on proximity to corners
         # slowdown = self._corner_slowdown_factor(s_base)
         slowdown = 1.0
-        
+
         return s_base, sd_base * slowdown, sdd_base * slowdown
-    
+
     def _corner_slowdown_factor(self, s):
         """Returns value in (0, 1] that reduces speed near corners"""
         # Find which segment we're in
         i = np.searchsorted(self.cum_L, s, side='right') - 1
         i = int(np.clip(i, 0, len(self.seg_L)-1))
-        
+
         # Distance from start and end of segment
         s_in_seg = s - self.cum_L[i]
         dist_to_end = self.seg_L[i] - s_in_seg
-        
+
         # Slow down if near end of segment (approaching corner)
         if dist_to_end < self.slow_distance:
             factor = dist_to_end / self.slow_distance
             return 0.2 + 0.8 * factor  # Reduce to 20% speed at corner
-        
+
         # Slow down if near start of segment (just left corner)
         if s_in_seg < self.slow_distance and i > 0:
             factor = s_in_seg / self.slow_distance
             return 0.2 + 0.8 * factor
-        
+
         return 1.0  # Full speed in middle of segments
-    
+
     def _locate_segment(self, s):
         i = np.searchsorted(self.cum_L, s, side='right') - 1
         i = int(np.clip(i, 0, len(self.seg_L)-1))
         s_local = s - self.cum_L[i]
         alpha = s_local / max(self.seg_L[i], 1e-9)
         return i, alpha
-    
+
     def __call__(self, t):
         s, _, _ = self._s(t)
         if s >= self.Ltot - 1e-12:
             return self.W[-1]
         i, alpha = self._locate_segment(s)
         return self.W[i] + alpha * (self.W[i+1] - self.W[i])
-    
+
     def velocity(self, t):
         s, sd, _ = self._s(t)
         if s >= self.Ltot - 1e-12 or sd <= 0:
             return np.zeros(self.nq)
         i, _ = self._locate_segment(s)
         return self.seg_dir[i] * sd
-    
+
     def acceleration(self, t):
         s, sd, sdd = self._s(t)
         if s >= self.Ltot - 1e-12:
             return np.zeros(self.nq)
         i, _ = self._locate_segment(s)
         return self.seg_dir[i] * sdd
-    
+
     def derivative(self, order):
         if order == 1:
             return self.velocity

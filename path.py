@@ -150,15 +150,13 @@ def computepath(qinit,
               q_goal=qgoal,
               max_time_s=max_time_s,
               progress_log_every=50,
-              repair_sampler=repair_sampler,
-              repair_max_attempts=repair_max_attempts,
               goal_bias=goal_bias)
 
     rrt = rrt.run()
 
     if not rrt:
         print(
-            """Valid Path was not found! 
+            """Valid Path was not found!
             Try to increase discretisation steps or try with different start and end configurations.""")
 
         return [], []
@@ -206,7 +204,6 @@ if __name__ == "__main__":
     parser.add_argument('--no-viz', action='store_true', help='Disable visualization during planning')
     parser.add_argument('--discretisation', type=int, default=DEFAULT_DISCRETISATION_STEPS, help='Discretisation steps for interpolation')
     parser.add_argument('--num-iter', type=int, default=DEFAULT_NUM_ITER, help='Maximum RRT iterations/samples')
-    parser.add_argument('--sampler', choices=['plane', 'smart'], default='plane', help='Which placement sampler to use')
     # smart sampler params
     parser.add_argument('--smart-init-sigma', type=float, default=0.02, help='Initial sigma (m) for smart midpoint sampler')
     parser.add_argument('--smart-scale', type=float, default=1.5, help='Sigma inflation factor for smart sampler')
@@ -253,86 +250,12 @@ if __name__ == "__main__":
 
     resolved_num_iter = use_or_preset('num-iter', args.num_iter)
     resolved_discretisation = use_or_preset('discretisation', args.discretisation)
-    resolved_repair_attempts = use_or_preset('repair-attempts', args.repair_attempts)
     resolved_goal_bias = use_or_preset('goal-bias', args.goal_bias)
     resolved_max_ik_attempts = use_or_preset('max-ik-attempts', args.max_ik_attempts if args.max_ik_attempts is not None else DEFAULT_MAX_IK_ATTEMPTS)
     resolved_max_time = use_or_preset('max-time', args.max_time if args.max_time is not None else DEFAULT_MAX_TIME_S)
     # choose sampler: either let computepath build the plane sampler, or build a smart sampler here
     RANDOM_SAMPLER = None
     REPAIR_SAMPLER = None
-    if args.sampler == 'smart':
-        # build a plane sampler to use as fallback
-        p0 = np.array(CUBE_PLACEMENT.translation)
-        p1 = np.array(CUBE_PLACEMENT_TARGET.translation)
-
-        p0_xy = p0[:2]
-        p1_xy = p1[:2]
-        seg = p1_xy - p0_xy
-        L = np.linalg.norm(seg)
-        if L < 1e-6:
-            u = np.array([1.0, 0.0])
-        else:
-            u = seg / L
-        perp = np.array([-u[1], u[0]])
-
-        half_width = DEFAULT_PLANE_HALF_WIDTH
-        zmin, zmax = DEFAULT_TABLE_Z_RANGE
-
-        def plane_sampler():
-            while True:
-                s = np.random.uniform(0.0, 1.0)
-                t = np.random.uniform(-half_width, half_width)
-                xy = (1.0 - s) * p0_xy + s * p1_xy + perp * t
-                z = np.random.uniform(zmin, zmax)
-                placement = pin.SE3(np.eye(3), np.array([xy[0], xy[1], z]))
-                setcubeplacement(robot, cube, placement)
-                has_collision = pin.computeCollisions(cube.collision_model, cube.collision_data, False)
-                if not has_collision:
-                    return placement
-
-        # If --smart-global selected, use the smart sampler as the global
-        # sampler; otherwise keep the plane sampler global and use smart as a
-        # local repair strategy. This keeps exploration simple by default but
-        # lets the user switch behaviour.
-        if args.smart_global:
-            RANDOM_SAMPLER = sampling_module.make_smart_midpoint_sampler(
-                robot=robot,
-                cube=cube,
-                p0=CUBE_PLACEMENT,
-                p1=CUBE_PLACEMENT_TARGET,
-                initial_sigma=args.smart_init_sigma,
-                sigma_scale=args.smart_scale,
-                max_sigma=args.smart_max_sigma,
-                max_attempts=args.smart_max_attempts,
-                fallback_sampler=plane_sampler,
-                anisotropic=True,
-                z_range=DEFAULT_TABLE_Z_RANGE,
-                viz=(None if args.no_viz else viz),
-                viz_delay=args.viz_delay,
-            )
-            REPAIR_SAMPLER = None
-        else:
-            # use the plane sampler as the global sampler and the smart sampler as a
-            # local repair strategy. This keeps global exploration simple while the
-            # smart sampler is used to attempt local fixes when an extension fails.
-            RANDOM_SAMPLER = plane_sampler
-
-            # create the smart sampler closure (used as repair_sampler)
-            REPAIR_SAMPLER = sampling_module.make_smart_midpoint_sampler(
-                robot=robot,
-                cube=cube,
-                p0=CUBE_PLACEMENT,
-                p1=CUBE_PLACEMENT_TARGET,
-                initial_sigma=args.smart_init_sigma,
-                sigma_scale=args.smart_scale,
-                max_sigma=args.smart_max_sigma,
-                max_attempts=args.smart_max_attempts,
-                fallback_sampler=plane_sampler,
-                anisotropic=True,
-                z_range=DEFAULT_TABLE_Z_RANGE,
-                viz=(None if args.no_viz else viz),
-                viz_delay=args.viz_delay,
-            )
 
     path, cube_placements = computepath(
         q0, qe, CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET,
@@ -342,8 +265,6 @@ if __name__ == "__main__":
         num_iter=resolved_num_iter,
         discretisation_steps=resolved_discretisation,
         random_sampler=RANDOM_SAMPLER,
-        repair_sampler=REPAIR_SAMPLER,
-        repair_max_attempts=resolved_repair_attempts,
         goal_bias=resolved_goal_bias,
         viz=viz_obj,
         viz_delay=args.viz_delay,

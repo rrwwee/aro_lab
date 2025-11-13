@@ -56,8 +56,6 @@ class RRT:
                  q_goal: Optional[np.ndarray] = None,
                  max_time_s: Optional[float] = None,
                  progress_log_every: int = 50,
-                 repair_sampler: Optional[Callable] = None,
-                 repair_max_attempts: int = 5,
                  goal_bias: float = 0.02):
 
         self.robot = robot
@@ -79,8 +77,6 @@ class RRT:
         self.q_goal = q_goal
         self.max_time_s = max_time_s
         self.progress_log_every = progress_log_every
-        self.repair_sampler = repair_sampler
-        self.repair_max_attempts = repair_max_attempts
         self.goal_bias = goal_bias
         # profiling counters for IK, viz and edge checks
         self._profile = {
@@ -330,52 +326,6 @@ class RRT:
 
             # If the extension succeeded use it. Otherwise, optionally try a
             # local repair sampler (smart sampler) a few times before continuing.
-            if not cp_q_new_found and self.repair_sampler is not None:
-                for r_attempt in range(self.repair_max_attempts):
-                    total_samples += 1
-                    try:
-                        repair_target = self.repair_sampler()
-                    except Exception:
-                        # if the repair sampler misbehaves, stop trying repairs
-                        break
-                    nearest_idx, nearest_vertex = self.get_nearest_vertex(repair_target)
-                    cp_q_new, cp_q_new_grasping_pose, cp_q_new_found = self.get_q_new(
-                        q_nearest_vertex=nearest_vertex,
-                        q_rand=repair_target,
-                        discretisation_steps=(self.discretisation_steps if self.discretisation_steps is not None else self.discretisation_steps),
-                        max_delta_q=self.max_delta_q,
-                    )
-                    if cp_q_new_found:
-                        successful_extensions += 1
-                        self.add_edge(parent_idx=nearest_idx, new_q=cp_q_new, new_grasping_q=cp_q_new_grasping_pose)
-                        # check connection to goal and return if found
-                        if self.check_edge(cp_q_new, cp_q_new_grasping_pose, self.cubeplacementqgoal,
-                                           discretisation_steps=(self.discretisation_steps if self.discretisation_steps is not None else self.discretisation_steps)):
-                            self.add_edge(parent_idx=len(self.nodes) - 1, new_q=self.cubeplacementqgoal, new_grasping_q=self.q_goal)
-                            elapsed = time.perf_counter() - start_time
-                            # attach metrics to self for later inspection
-                            self.metrics = {
-                                'total_samples': total_samples,
-                                'successful_extensions': successful_extensions,
-                                'iterations': i + 1,
-                                'time_s': elapsed,
-                                'samples_per_s': total_samples / elapsed if elapsed > 0 else float('inf'),
-                                'success_rate': successful_extensions / total_samples if total_samples > 0 else 0.0,
-                            }
-                            try:
-                                self.metrics['profiling'] = self._profile.copy()
-                            except Exception:
-                                self.metrics['profiling'] = {}
-                            try:
-                                self.metrics['sampling'] = sampling.metrics.copy()
-                            except Exception:
-                                self.metrics['sampling'] = {}
-                            logger.info("RRT found a path after %d iterations (%.3fs)", i + 1, elapsed)
-                            logger.info("Samples: %d, successful extensions: %d, success rate: %.3f, samples/s: %.1f",
-                                        total_samples, successful_extensions, self.metrics['success_rate'], self.metrics['samples_per_s'])
-                            return self
-                        break
-
             if cp_q_new_found:
                 successful_extensions += 1
                 self.add_edge(parent_idx=nearest_idx, new_q=cp_q_new, new_grasping_q=cp_q_new_grasping_pose)
