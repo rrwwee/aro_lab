@@ -5,7 +5,7 @@ Place all tunable "magic numbers" here so they are easy to discover and tweak.
 from typing import Tuple
 
 # Sampling (table / cube placement)
-DEFAULT_TABLE_Z_RANGE: Tuple[float, float] = (0.93, 1.3)
+DEFAULT_TABLE_Z_RANGE: Tuple[float, float] = (0.93, 2)
 DEFAULT_CHECK_COLLISIONS: bool = True
 
 # RRT / planning
@@ -20,13 +20,15 @@ SAMPLE_DISPLAY_EVERY: int = 1    # display every N samples when visualizing samp
 # Fraction of the table extents to use when creating a restricted sampling region
 DEFAULT_SAMPLER_SHRINK: float = 0.3
 # When sampling on the vertical plane, allow a small half-width (meters) perpendicular to the plane
-DEFAULT_PLANE_HALF_WIDTH: float = 0.02
+DEFAULT_PLANE_HALF_WIDTH: float = 0.3
 
 # Planner-specific defaults (tunable)
 DEFAULT_REPAIR_ATTEMPTS: int = 5
 DEFAULT_GOAL_BIAS: float = 0.03
 DEFAULT_MAX_IK_ATTEMPTS: int = 3
 DEFAULT_MAX_TIME_S: float = 300
+
+MIN_DIST_TO_OBS: float = 0.02
 
 # Preset bundles for convenience: 'fast', 'default', 'robust'
 PRESETS = {

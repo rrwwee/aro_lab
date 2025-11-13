@@ -5,6 +5,7 @@ This module contains a focused RRT implementation that works with cube
 placements (pin.SE3) and optional grasping-pose callbacks. The implementation
 is intentionally minimal and readable.
 """
+from turtle import distance
 from typing import Callable, Tuple, List, Optional
 
 import logging
@@ -13,7 +14,7 @@ import numpy as np
 import pinocchio as pin
 from pinocchio.utils import rotate
 
-from constants import EDGE_DISTANCE_TOL, DEFAULT_DISCRETISATION_STEPS, DEFAULT_CHECK_EDGE_STEPS
+from constants import EDGE_DISTANCE_TOL, DEFAULT_DISCRETISATION_STEPS, MIN_DIST_TO_OBS
 from tools import setcubeplacement, distanceToObstacle
 from constants import DEFAULT_VIZ_DELAY
 import time
@@ -24,10 +25,21 @@ logger = logging.getLogger(__name__)
 from dataclasses import dataclass
 
 
+def distance_to_obstacle_only(robot, cube, q):
+      '''Return the shortest distance between robot and the obstacle. '''
+      geomidobs = robot.collision_model.getGeometryId('baseLink_0')
+      pairs = [i for i, pair in enumerate(robot.collision_model.collisionPairs) if pair.second == geomidobs]
+      pin.framesForwardKinematics(robot.model,robot.data,q)
+      pin.updateGeometryPlacements(robot.model,robot.data,robot.collision_model,robot.collision_data,q)
+      dists = [pin.computeDistance(robot.collision_model, robot.collision_data, idx).min_distance for idx in pairs]
+
+      return min(dists)
+
+
 @dataclass
 class Vertex:
     q: pin.SE3
-    grasping_q: Optional[np.ndarray]
+    grasping_q: np.ndarray
     parent: Optional['Vertex'] = None
 
 
@@ -156,7 +168,6 @@ class RRT:
                 # Use the IK wrapper to call the IK callback in a
                 # backwards-compatible way and time the call. We set
                 # viz_sleep=False so display calls (if any) don't sleep.
-                from ik_utils import call_ik
                 grasping_q, found = computeqgrasppose(
                     robot=self.robot,
                     qcurrent=seed_grasping_q,
@@ -166,28 +177,27 @@ class RRT:
                     max_attempts=(self.max_ik_attempts if self.max_ik_attempts is not None else 1000),
                     viz_sleep=False,
                 )
-                # update seed for the next interpolation step if IK succeeded
                 if found and grasping_q is not None:
                     seed_grasping_q = grasping_q
-                if not found or distanceToObstacle(self.robot, grasping_q) < 0.001:
-                    # cannot progress past the previous valid step
+                if not found or distance_to_obstacle_only(self.robot, self.cube, grasping_q) < MIN_DIST_TO_OBS:
                     if i - 1 == 0:
                         q_new_found = False
                         return q_nearest_vertex.q, q_nearest_vertex.grasping_q, False
                     return self.lerp(q_nearest_vertex.q, q_end, dt * (i - 1)), grasping_q, True
         return q_end, grasping_q, q_new_found
 
-    def check_edge(self, q_latest_new: pin.SE3, q_latest_new_grasping_pose: Optional[np.ndarray],
-                   q_goal: pin.SE3) -> bool:
-        # Try to progress from q_latest_new to q_goal using get_q_new semantics
+    def check_edge(
+        self,
+        q_latest_new: pin.SE3,
+        q_latest_new_grasping_pose: Optional[np.ndarray],
+        q_goal: pin.SE3
+        ) -> bool:
         dummy_vertex = Vertex(q=q_latest_new, grasping_q=q_latest_new_grasping_pose, parent=None)
-        t_edge = time.perf_counter()
         q_new, q_new_grasping_q, q_new_found = self.get_q_new(
             q_nearest_vertex=dummy_vertex,
             q_rand=q_goal,
             max_delta_q=None,
         )
-        dt_edge = time.perf_counter() - t_edge
         if not q_new_found:
             return False
         distance_to_target = self.calc_distance(q_new, q_goal)
