@@ -7,7 +7,7 @@ class Bezier:
         self.T_min_ = t_min
         self.T_max_ = t_max
         self.mult_T_ = mult_t
-        self.size_ = len(pointlist)- 1
+        self.size_ = len(pointlist)
         self.degree_ = self.size_ - 1
         self.control_points_ = pointlist    
         if (self.size_ < 1 or self.T_max_ <= self.T_min_):

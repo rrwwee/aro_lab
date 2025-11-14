@@ -6,6 +6,7 @@ Created on Wed Sep  6 15:32:51 2023
 @author: stonneau
 """
 
+import pickle
 import numpy as np
 
 from zmq.constants import THREAD_AFFINITY_CPU_REMOVE
@@ -15,7 +16,7 @@ import pinocchio as pin
 from cube_trajectory_wrapper import GlobalMinJerkLinearJTraj
 from tools import setcubeplacement
 from config import LEFT_HAND, RIGHT_HAND
-
+from qp_utils import get_bezier_control_points
 import pybullet as pyb
     
 # in my solution these gains were good enough for all joints but you might want to tune this.
@@ -26,7 +27,15 @@ Kx_lin = 2000  # Very stiff position control
 Dx_lin = 5 * np.sqrt(Kx_lin)
 
 Kx_rot = 1000
-Dx_rot = 10           
+Dx_rot = 10          
+
+# Whether to use Bezier curve for trajectory generation
+USE_BEZIER = False
+
+if USE_BEZIER:
+    Kp = 1000               # proportional gain (P of PD)
+    Kv = 30 * np.sqrt(Kp)   # derivative gain (D of PD)
+
 
 def controllaw(sim, robot, trajs, tcurrent):
     """Joint trajectory tracking with end-effector force correction"""
@@ -124,9 +133,9 @@ if __name__ == "__main__":
     q0, successinit = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT, None)
     qe, successend = computeqgrasppose(robot, robot.q0, cube, CUBE_PLACEMENT_TARGET,  None)
 
+
     if not successinit or not successend:
-        print('Failed to compute grasp pose')
-        exit()
+        raise RuntimeError('Failed to successfully compute grasp pose!')
 
     path, cube_placements = computepath(
         q0,
@@ -139,8 +148,7 @@ if __name__ == "__main__":
 
     sim.setqsim(q0)
 
-    def maketraj(q0, q1, path, T): #TODO compute a real trajectory !
-        points = [q0, q0] + path + [q1, q1]
+    def maketraj(points, T):
         q_of_t = Bezier(points,t_max=T)
         vq_of_t = q_of_t.derivative(1)
         vvq_of_t = vq_of_t.derivative(1)
@@ -161,17 +169,18 @@ if __name__ == "__main__":
             joint_space_trajectory.derivative(2)
         )
     
-    total_time=10.
+    total_time=10.0
 
-    trajs = maketraj_with_joint_space_linear(
-        waypoints=path,
-        T=total_time
-    )
-
-    cube_trajs = maketraj_with_joint_space_linear(
-        waypoints=[p.translation for p in cube_placements],
-        T=total_time
-    )[0]
+    if USE_BEZIER:
+        control_points = get_bezier_control_points(path)
+        if control_points is None:
+            raise RuntimeError('Failed to successfully compute Bezier control points!')
+        trajs = maketraj(control_points, total_time)
+    else:
+        trajs = maketraj_with_joint_space_linear(
+            waypoints=path,
+            T=total_time
+        )
 
     tcur = 0.
     

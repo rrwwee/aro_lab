@@ -30,13 +30,16 @@ import numpy as np
 
 logger = logging.getLogger(__name__)
 
+from typing import Callable, Tuple, List
+from pinocchio.utils import rotate
+from tools import setcubeplacement, distanceToObstacle
+
 __all__ = [
     "random_cube_placement",
     "Vertex",
     "RRT",
     "construct_rrt",
 ]
-
 
 def computepath(qinit,
                 qgoal,

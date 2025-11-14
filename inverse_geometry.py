@@ -9,8 +9,8 @@ Created on Wed Sep  6 15:32:51 2023
 import pinocchio as pin 
 import numpy as np
 from numpy.linalg import pinv,inv,norm,svd,eig
+from tools import collision, getcubeplacement, setcubeplacement, jointlimitsviolated
 import time
-from tools import collision, getcubeplacement, setcubeplacement, projecttojointlimits
 from config import LEFT_HOOK, RIGHT_HOOK, LEFT_HAND, RIGHT_HAND, EPSILON
 from config import CUBE_PLACEMENT, CUBE_PLACEMENT_TARGET
 
@@ -72,8 +72,8 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None, max_attempts:
 
         q = pin.integrate(robot.model,q, vq)
 
-        lerror = norm(oMlhand.translation - oMlhook.translation)
-        rerror = norm(oMrhand.translation - oMrhook.translation)
+        lerror = norm(oMlhand.translation - oMlhook.translation) + norm(oMlhand.rotation - oMlhook.rotation)
+        rerror = norm(oMrhand.translation - oMrhook.translation) + norm(oMrhand.rotation - oMrhook.rotation)
 
         if viz:
             # allow callers to request that we display without sleeping so the
@@ -82,7 +82,7 @@ def computeqgrasppose(robot, qcurrent, cube, cubetarget, viz=None, max_attempts:
             if viz_sleep:
                 time.sleep(0.1)
         
-        if lerror < EPSILON and rerror < EPSILON and not collision(robot, q):
+        if lerror < EPSILON and rerror < EPSILON and not collision(robot, q) and not jointlimitsviolated(robot, q):
             success = True
             break
     
