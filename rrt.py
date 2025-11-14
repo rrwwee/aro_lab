@@ -5,7 +5,6 @@ This module contains a focused RRT implementation that works with cube
 placements (pin.SE3) and optional grasping-pose callbacks. The implementation
 is intentionally minimal and readable.
 """
-from turtle import distance
 from typing import Callable, Tuple, List, Optional
 
 import logging
